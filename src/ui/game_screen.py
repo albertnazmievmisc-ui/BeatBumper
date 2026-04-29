@@ -46,27 +46,27 @@ class GameScreen:
         self.last_hit_result: Optional[HitResult] = None
         self.result_display_timer = 0.0
 
-        def update(self, dt: float, input_handler: InputHandler) -> None:
-            """Обновление игрового состояния"""
-            if self.game_over:
-                return
+    def update(self, dt: float, input_handler: InputHandler) -> None:
+        """Обновление игрового состояния"""
+        if self.game_over:
+            return
 
-            # Выход из игры
-            if input_handler.is_quit_pressed():
-                self.game_over = True
-                return
+        # Выход из игры
+        if input_handler.is_quit_pressed():
+            self.game_over = True
+            return
 
-            # Пауза
-            if input_handler.is_pause_pressed():
-                if self.paused:
-                    self.audio.unpause()
-                    self.paused = False
-                else:
-                    self.audio.pause()
-                    self.paused = True
-
+        # Пауза
+        if input_handler.is_pause_pressed():
             if self.paused:
-                return
+                self.audio.unpause()
+                self.paused = False
+            else:
+                self.audio.pause()
+                self.paused = True
+
+        if self.paused:
+            return
 
         # Текущая позиция в песне
         song_position = self.audio.get_adjusted_position()
