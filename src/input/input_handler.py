@@ -54,6 +54,7 @@ class InputHandler:
         }
 
         # Маппинг геймпада
+
         self.joystick_action_map = {
             Action.HIT: [0],  # A кнопка
             Action.PAUSE: [7],  # Start
