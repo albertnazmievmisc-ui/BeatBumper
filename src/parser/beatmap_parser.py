@@ -19,6 +19,7 @@ class BeatmapParser:
 
     def __init__(self):
         self.bpm = 120.0
+        self.version = None
 
     def _detect_format(self, beatmap_data: Dict) -> str:
         """Определение формата битмапы"""
@@ -28,7 +29,7 @@ class BeatmapParser:
         # v4: есть colorNotes + colorNotesData (индексная адресация)
         if "colorNotes" in beatmap_data and "colorNotesData" in beatmap_data:
             return "v4"
-        # v3: есть colorNotes с полными данными (без отдельного Data-массива)
+        # v3: есть colorNotes с полными данными
         elif "colorNotes" in beatmap_data:
             return "v3"
         # v2: старый формат _notes
@@ -39,49 +40,47 @@ class BeatmapParser:
             return "v2"
 
     def parse(self, beatmap_data: Dict) -> List[Dict]:
-        """Парсинг данных битмапы в список нот (только красные)"""
+        """Парсинг данных битмапы в список нот (всех цветов)"""
         format_type = self._detect_format(beatmap_data)
         print(f"📄 Формат битмапы: {format_type} (v{self.version})")
 
         if format_type == "v4":
-            return self._parse_object_with_data(
-                beatmap_data,
-                object_key="colorNotes",
-                data_key="colorNotesData",
-                is_red_fn=lambda data: data.get("c") == self.COLOR_RED,
-            )
+            return self._parse_v4(beatmap_data)
         elif format_type == "v3":
             return self._parse_v3(beatmap_data)
         else:
             return self._parse_v2(beatmap_data)
 
-    def _parse_object_with_data(
-        self, beatmap_data: Dict, object_key: str, data_key: str, is_red_fn
-    ) -> List[Dict]:
-        """Универсальный парсер для v4 (объекты + отдельные метаданные)"""
-        # BPM может быть в bpmEvents или отдельно
+    def _parse_v4(self, beatmap_data: Dict) -> List[Dict]:
+        """Парсинг v4.1.0: colorNotes + colorNotesData"""
         self.bpm = self._get_bpm(beatmap_data)
 
-        objects = beatmap_data.get(object_key, [])
-        data_list = beatmap_data.get(data_key, [])
+        objects = beatmap_data.get("colorNotes", [])
+        data_list = beatmap_data.get("colorNotesData", [])
+
+        # Также собираем бомбы (для информации)
+        bomb_objects = beatmap_data.get("bombNotes", [])
+        bomb_data = beatmap_data.get("bombNotesData", [])
+
+        # TODO: арки (arcs) — для будущей реализации
+        # arcs = beatmap_data.get('arcs', [])
+        # arcs_data = beatmap_data.get('arcsData', [])
 
         parsed_notes = []
 
         for obj in objects:
-            # Индекс в data-массиве
             data_index = obj.get("i", 0)
 
             if data_index >= len(data_list):
                 print(
-                    f"⚠️ Индекс {data_index} вне границ {data_key} (размер: {len(data_list)})"
+                    f"⚠️ Индекс {data_index} вне границ colorNotesData (размер: {len(data_list)})"
                 )
                 continue
 
             note_data = data_list[data_index]
 
-            # Фильтруем только красные ноты (c == 0)
-            if not is_red_fn(note_data):
-                continue
+            # Определяем цвет (c: 0 = красный, 1 = синий)
+            note_color = "red" if note_data.get("c") == self.COLOR_RED else "blue"
 
             # Время в битах
             beat_time = obj.get("b", 0.0)
@@ -90,6 +89,7 @@ class BeatmapParser:
             parsed_notes.append(
                 {
                     "time": time_in_seconds,
+                    "color": note_color,
                     "line_layer": note_data.get("y", 0),
                     "line_index": note_data.get("x", 0),
                     "cut_direction": note_data.get("d", 0),
@@ -100,13 +100,27 @@ class BeatmapParser:
         # Сортировка по времени
         parsed_notes.sort(key=lambda x: x["time"])
 
+        red_count = sum(1 for n in parsed_notes if n["color"] == "red")
+        blue_count = sum(1 for n in parsed_notes if n["color"] == "blue")
+
         print(
-            f"🎵 Парсинг завершен: {len(parsed_notes)} красных нот из {len(objects)} объектов"
+            f"🎵 Парсинг завершен: {len(parsed_notes)} нот (🔴 {red_count} красных, 🔵 {blue_count} синих)"
         )
         print(f"   BPM: {self.bpm}")
         if parsed_notes:
-            print(f"   Первая нота: {parsed_notes[0]['time']:.2f}с")
-            print(f"   Последняя нота: {parsed_notes[-1]['time']:.2f}с")
+            print(
+                f"   Первая нота: {parsed_notes[0]['time']:.2f}с ({parsed_notes[0]['color']})"
+            )
+            print(
+                f"   Последняя нота: {parsed_notes[-1]['time']:.2f}с ({parsed_notes[-1]['color']})"
+            )
+
+        # Информация о других объектах
+        if bomb_objects:
+            print(f"   💣 Бомб: {len(bomb_objects)}")
+        obstacles = beatmap_data.get("obstacles", [])
+        if obstacles:
+            print(f"   🧱 Стен: {len(obstacles)}")
 
         return parsed_notes
 
@@ -117,8 +131,7 @@ class BeatmapParser:
         parsed_notes = []
 
         for note in color_notes:
-            if note.get("c") != self.COLOR_RED:
-                continue
+            note_color = "red" if note.get("c") == self.COLOR_RED else "blue"
 
             beat_time = note.get("b", 0.0)
             time_in_seconds = self._beats_to_seconds(beat_time)
@@ -126,6 +139,7 @@ class BeatmapParser:
             parsed_notes.append(
                 {
                     "time": time_in_seconds,
+                    "color": note_color,
                     "line_layer": note.get("y", 0),
                     "line_index": note.get("x", 0),
                     "cut_direction": note.get("d", 0),
@@ -135,10 +149,13 @@ class BeatmapParser:
 
         parsed_notes.sort(key=lambda x: x["time"])
 
-        print(f"🎵 Парсинг завершен: {len(parsed_notes)} красных нот (v3)")
+        red_count = sum(1 for n in parsed_notes if n["color"] == "red")
+        blue_count = sum(1 for n in parsed_notes if n["color"] == "blue")
+
+        print(
+            f"🎵 Парсинг завершен: {len(parsed_notes)} нот (🔴 {red_count} красных, 🔵 {blue_count} синих)"
+        )
         print(f"   BPM: {self.bpm}")
-        if parsed_notes:
-            print(f"   Длительность: {parsed_notes[-1]['time']:.1f} сек")
 
         return parsed_notes
 
@@ -149,8 +166,13 @@ class BeatmapParser:
         parsed_notes = []
 
         for note in notes:
-            if note.get("_type") != self.NOTE_RED_V2:
+            note_type = note.get("_type")
+
+            # Бомбы пропускаем
+            if note_type == self.BOMB_V2:
                 continue
+
+            note_color = "red" if note_type == self.NOTE_RED_V2 else "blue"
 
             beat_time = note.get("_time", 0.0)
             time_in_seconds = self._beats_to_seconds(beat_time)
@@ -158,6 +180,7 @@ class BeatmapParser:
             parsed_notes.append(
                 {
                     "time": time_in_seconds,
+                    "color": note_color,
                     "line_layer": note.get("_lineLayer", 0),
                     "line_index": note.get("_lineIndex", 0),
                     "cut_direction": note.get("_cutDirection", 0),
@@ -166,7 +189,12 @@ class BeatmapParser:
 
         parsed_notes.sort(key=lambda x: x["time"])
 
-        print(f"🎵 Парсинг завершен: {len(parsed_notes)} красных нот (v2)")
+        red_count = sum(1 for n in parsed_notes if n["color"] == "red")
+        blue_count = sum(1 for n in parsed_notes if n["color"] == "blue")
+
+        print(
+            f"🎵 Парсинг завершен: {len(parsed_notes)} нот (🔴 {red_count} красных, 🔵 {blue_count} синих)"
+        )
         print(f"   BPM: {self.bpm}")
 
         return parsed_notes
@@ -179,5 +207,5 @@ class BeatmapParser:
         return beatmap_data.get("_beatsPerMinute", 120.0)
 
     def _beats_to_seconds(self, beats: float) -> float:
-        """Конвертация битов в секунды (упрощённая, без учёта variable BPM)"""
+        """Конвертация битов в секунды"""
         return (beats / self.bpm) * 60.0

@@ -12,7 +12,8 @@ from utils.config import Config
 class Action(Enum):
     """Игровые действия"""
 
-    HIT = auto()  # Нажатие пробела / A кнопки
+    HIT_RED = auto()  # Удар по красной ноте
+    HIT_BLUE = auto()  # Удар по синей ноте
     PAUSE = auto()  # Пауза
     QUIT = auto()  # Выход
     FULLSCREEN = auto()  # Переключение полноэкранного режима
@@ -41,9 +42,10 @@ class InputHandler:
         self.buttons_pressed: Set[int] = set()
         self.buttons_just_pressed: Set[int] = set()
 
-        # Маппинг действий
+        # Маппинг действий на клавиатуру
         self.action_map = {
-            Action.HIT: [pygame.K_SPACE],
+            Action.HIT_RED: [pygame.K_SPACE, pygame.K_a],
+            Action.HIT_BLUE: [pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_s],
             Action.PAUSE: [pygame.K_ESCAPE, pygame.K_p],
             Action.QUIT: [pygame.K_q],
             Action.FULLSCREEN: [(pygame.K_RETURN, pygame.KMOD_ALT)],
@@ -53,13 +55,13 @@ class InputHandler:
             Action.MENU_BACK: [pygame.K_ESCAPE],
         }
 
-        # Маппинг геймпада
-
+        # Маппинг действий на геймпад (Steam Deck / Xbox)
         self.joystick_action_map = {
-            Action.HIT: [0],  # A кнопка
+            Action.HIT_RED: [0],  # A кнопка
+            Action.HIT_BLUE: [2],  # X кнопка
             Action.PAUSE: [7],  # Start
             Action.MENU_BACK: [1],  # B кнопка
-            Action.QUIT: [6],  # Back/Select - добавить эту строку
+            Action.QUIT: [6],  # Back/Select
         }
 
     def _init_joystick(self) -> None:
@@ -123,9 +125,13 @@ class InputHandler:
 
         return False
 
-    def is_hit_pressed(self) -> bool:
-        """Проверка нажатия для удара (мгновенное)"""
-        return self.is_action_just_pressed(Action.HIT)
+    def is_hit_red_pressed(self) -> bool:
+        """Проверка нажатия для красного удара"""
+        return self.is_action_just_pressed(Action.HIT_RED)
+
+    def is_hit_blue_pressed(self) -> bool:
+        """Проверка нажатия для синего удара"""
+        return self.is_action_just_pressed(Action.HIT_BLUE)
 
     def is_quit_pressed(self) -> bool:
         return self.is_action_just_pressed(Action.QUIT)
