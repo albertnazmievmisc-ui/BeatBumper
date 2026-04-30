@@ -9,7 +9,7 @@ from enum import Enum, auto
 from typing import Optional
 
 from utils.config import Config
-from input.input_handler import InputHandler
+from input.input_handler import InputHandler, Action
 from audio.audio_manager import AudioManager
 from ui.menu_screen import MenuScreen
 from ui.game_screen import GameScreen
@@ -21,7 +21,6 @@ class GameState(Enum):
 
     MENU = auto()
     PLAYING = auto()
-    PAUSED = auto()
     RESULTS = auto()
     QUIT = auto()
 
@@ -72,10 +71,7 @@ class GameEngine:
                 self._update_fps_monitor()
 
     def _handle_global_input(self) -> None:
-        """Обработка глобальных клавиш"""
-        if self.input_handler.is_quit_pressed():
-            self.running = False
-
+        """Обработка глобальных клавиш (работают всегда)"""
         # Alt+Enter для переключения полноэкранного режима
         if self.input_handler.is_fullscreen_toggle():
             self.config.toggle_fullscreen()
@@ -84,32 +80,55 @@ class GameEngine:
         """Обновление текущего состояния игры"""
         if self.state == GameState.MENU:
             self.menu_screen.update(dt, self.input_handler)
+
+            # Проверка выхода из меню
+            if self.menu_screen.quit_requested:
+                print("👋 Выход из игры (меню)")
+                self.running = False
+                return
+
             if self.menu_screen.start_game_requested:
                 self._start_game()
 
         elif self.state == GameState.PLAYING:
             if self.game_screen:
                 self.game_screen.update(dt, self.input_handler)
+
+                # Проверка завершения игры
                 if self.game_screen.game_over:
-                    # Проверяем, был ли это выход или конец песни
+                    # Останавливаем аудио если ещё играет
                     if self.audio_manager.is_playing():
                         self.audio_manager.stop()
-                    self._show_results()
 
-        elif self.state == GameState.PAUSED:
-            if self.input_handler.is_pause_pressed():
-                self.state = GameState.PLAYING
-            # Добавить выход из паузы
-            elif self.input_handler.is_quit_pressed():
-                if self.game_screen:
-                    self.game_screen.game_over = True
-                    self.state = GameState.PLAYING  # Чтобы сработала логика выше
+                    # Если запрошен выход в меню
+                    if self.game_screen.quit_requested:
+                        print("📋 Выход в главное меню")
+                        self._return_to_menu()
+                    else:
+                        # Показываем результаты
+                        self._show_results()
 
         elif self.state == GameState.RESULTS:
             if self.results_screen:
                 self.results_screen.update(dt, self.input_handler)
+
+                # Проверка выхода из результатов (Q или Back)
+                if self.input_handler.is_quit_pressed():
+                    print("👋 Выход из игры (результаты)")
+                    self.running = False
+                    return
+
                 if self.results_screen.back_to_menu:
-                    self.state = GameState.MENU
+                    self._return_to_menu()
+
+    def _return_to_menu(self) -> None:
+        """Возврат в главное меню"""
+        self.state = GameState.MENU
+        self.game_screen = None
+        self.results_screen = None
+        self.menu_screen.start_game_requested = False
+        self.menu_screen.quit_requested = False
+        self.menu_screen.selected_song = None
 
     def _render(self) -> None:
         """Отрисовка текущего состояния"""
@@ -117,7 +136,7 @@ class GameEngine:
 
         if self.state == GameState.MENU:
             self.menu_screen.render()
-        elif self.state in (GameState.PLAYING, GameState.PAUSED):
+        elif self.state == GameState.PLAYING:
             if self.game_screen:
                 self.game_screen.render()
         elif self.state == GameState.RESULTS:
@@ -131,6 +150,10 @@ class GameEngine:
     def _start_game(self) -> None:
         """Запуск игровой сессии"""
         selected_song = self.menu_screen.selected_song
+        if not selected_song:
+            print("❌ Нет выбранной песни!")
+            return
+
         self.game_screen = GameScreen(
             self.screen, self.config, self.audio_manager, selected_song
         )
@@ -143,6 +166,7 @@ class GameEngine:
             stats = self.game_screen.get_stats()
             self.results_screen = ResultsScreen(self.screen, self.config, stats)
             self.state = GameState.RESULTS
+            self.game_screen = None
 
     def _update_fps_monitor(self) -> None:
         """Обновление статистики FPS"""

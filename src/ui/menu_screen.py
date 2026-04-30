@@ -1,5 +1,5 @@
 """
-Экран меню выбора песни и сложности
+Экран меню выбора песни и сложности с выходом
 """
 
 import pygame
@@ -19,6 +19,7 @@ class MenuScreen:
         self.screen = screen
         self.config = config
         self.start_game_requested = False
+        self.quit_requested = False  # Флаг выхода из игры
         self.selected_song = None
 
         # Шрифты
@@ -99,6 +100,11 @@ class MenuScreen:
 
     def update(self, dt: float, input_handler: InputHandler) -> None:
         """Обновление меню"""
+        # Проверка выхода
+        if input_handler.is_quit_pressed():
+            self.quit_requested = True
+            return
+
         if self.showing_difficulties:
             self._update_difficulty_selection(input_handler)
         else:
@@ -119,9 +125,9 @@ class MenuScreen:
                 self._load_difficulties(self.selected_index)
                 self.showing_difficulties = True
 
-        # Выход
+        # Выход из игры
         elif input_handler.is_action_just_pressed(Action.QUIT):
-            pygame.event.post(pygame.event.Event(pygame.QUIT))
+            self.quit_requested = True
 
     def _update_difficulty_selection(self, input_handler: InputHandler) -> None:
         """Обновление выбора сложности"""
@@ -139,11 +145,13 @@ class MenuScreen:
             self._load_selected_song()
 
         # Отмена — назад к выбору песни
-        elif input_handler.is_action_just_pressed(
-            Action.PAUSE
-        ) or input_handler.is_action_just_pressed(Action.QUIT):
+        elif input_handler.is_action_just_pressed(Action.MENU_BACK):
             self.showing_difficulties = False
             self.selected_difficulty_index = 0
+
+        # Выход из игры
+        elif input_handler.is_action_just_pressed(Action.QUIT):
+            self.quit_requested = True
 
     def render(self) -> None:
         """Отрисовка меню"""
@@ -170,7 +178,7 @@ class MenuScreen:
 
         # Инструкция
         instr = self.small_font.render(
-            "A/Enter — Select   Start — Quit", True, (150, 150, 150)
+            "A/Enter — Select   Back/Q — Quit", True, (150, 150, 150)
         )
         instr_rect = instr.get_rect(centerx=self.config.screen_width // 2, y=220)
         self.screen.blit(instr, instr_rect)
@@ -213,7 +221,7 @@ class MenuScreen:
 
         # Инструкция
         instr = self.small_font.render(
-            "A/Enter — Start   B/Back — Cancel", True, (150, 150, 150)
+            "A/Enter — Start   B/Back — Cancel   Q — Quit", True, (150, 150, 150)
         )
         instr_rect = instr.get_rect(centerx=self.config.screen_width // 2, y=200)
         self.screen.blit(instr, instr_rect)
