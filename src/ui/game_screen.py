@@ -1,5 +1,5 @@
 """
-Игровой экран с поддержкой красных и синих нот
+Игровой экран (ноты сверху вниз, RT/LT для ударов)
 """
 
 import pygame
@@ -80,75 +80,57 @@ class GameScreen:
         # Обновление нот
         self.note_controller.update(dt, song_position)
 
-        # Проверка попаданий по КРАСНЫМ нотам
+        # Проверка попаданий по КРАСНЫМ нотам (RT / →)
         if input_handler.is_hit_red_pressed():
             result, note = self.note_controller.check_hit_red(song_position)
 
             if result == HitResult.MISS:
-                # Промах — нет ноты рядом
-                pass
+                pass  # Промах — нет ноты рядом
             elif result == HitResult.WRONG_COLOR:
-                # Попадание не тем цветом — штраф!
                 self.score_manager.add_hit(HitResult.MISS)
                 self.audio.play_sfx("miss")
                 self.last_hit_result = HitResult.WRONG_COLOR
                 self.last_hit_color = NoteColor.RED
                 self.result_display_timer = 0.5
-
                 if note:
-                    self.renderer.add_explosion(
-                        note.x, note.y, False  # Не perfect при ошибке цвета
-                    )
+                    self.renderer.add_explosion(note.x, note.y, False)
             else:
-                # Perfect или Good
                 score = self.score_manager.add_hit(result)
                 self.last_hit_result = result
                 self.last_hit_color = NoteColor.RED
                 self.result_display_timer = 0.5
-
-                # Эффект взрыва
                 if note:
                     self.renderer.add_explosion(
                         note.x, note.y, result == HitResult.PERFECT
                     )
-
-                # Звуковой эффект
                 self.audio.play_sfx("hit")
 
-        # Проверка попаданий по СИНИМ нотам
+        # Проверка попаданий по СИНИМ нотам (LT / ←)
         if input_handler.is_hit_blue_pressed():
             result, note = self.note_controller.check_hit_blue(song_position)
 
             if result == HitResult.MISS:
-                # Промах — нет ноты рядом
                 pass
             elif result == HitResult.WRONG_COLOR:
-                # Попадание не тем цветом — штраф!
                 self.score_manager.add_hit(HitResult.MISS)
                 self.audio.play_sfx("miss")
                 self.last_hit_result = HitResult.WRONG_COLOR
                 self.last_hit_color = NoteColor.BLUE
                 self.result_display_timer = 0.5
-
                 if note:
                     self.renderer.add_explosion(note.x, note.y, False)
             else:
-                # Perfect или Good
                 score = self.score_manager.add_hit(result)
                 self.last_hit_result = result
                 self.last_hit_color = NoteColor.BLUE
                 self.result_display_timer = 0.5
-
-                # Эффект взрыва
                 if note:
                     self.renderer.add_explosion(
                         note.x, note.y, result == HitResult.PERFECT
                     )
-
-                # Звуковой эффект
                 self.audio.play_sfx("hit")
 
-        # Проверка пропущенных нот (обоих цветов)
+        # Проверка пропущенных нот
         missed_notes = self.note_controller.check_missed_notes(song_position)
         for note in missed_notes:
             self.score_manager.add_hit(HitResult.MISS)
@@ -163,12 +145,12 @@ class GameScreen:
         self.renderer.render_background()
         self.renderer.render_hit_line()
 
-        # Отрисовка нот (с цветом)
+        # Отрисовка нот
         visible_notes = self.note_controller.get_visible_notes()
         self.renderer.render_notes(visible_notes)
 
         # Эффекты
-        self.renderer.render_effects(0.016)  # ~60 FPS
+        self.renderer.render_effects(0.016)
 
         # Счет и комбо
         self.renderer.render_score(self.score_manager.stats.score)
@@ -186,25 +168,23 @@ class GameScreen:
         """Отображение результата попадания"""
         if self.last_hit_result == HitResult.PERFECT:
             text = "PERFECT!"
-            color = (255, 215, 0)  # Золотой
+            color = (255, 215, 0)
         elif self.last_hit_result == HitResult.GOOD:
             text = "Good"
-            color = (100, 255, 100)  # Зелёный
+            color = (100, 255, 100)
         elif self.last_hit_result == HitResult.WRONG_COLOR:
-            # Показываем, каким цветом ударили неправильно
             if self.last_hit_color == NoteColor.RED:
-                text = "Wrong Color (Red)"
-                color = (255, 100, 100)
+                text = "Wrong! (Red)"
             else:
-                text = "Wrong Color (Blue)"
-                color = (100, 100, 255)
+                text = "Wrong! (Blue)"
+            color = (255, 150, 150)
         else:
             return
 
         font = pygame.font.Font(None, 48)
         surf = font.render(text, True, color)
         rect = surf.get_rect(
-            center=(self.config.screen_width // 2, self.config.screen_height - 100)
+            center=(self.config.screen_width // 2, self.config.screen_height - 60)
         )
         self.screen.blit(surf, rect)
 

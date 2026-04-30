@@ -1,5 +1,5 @@
 """
-Спрайты нот (красные и синие)
+Спрайты нот (красные справа, синие слева)
 """
 
 import pygame
@@ -28,15 +28,15 @@ class NoteSprite:
 
         # Определяем цвета для градиента
         if color == NoteColor.RED:
-            dark_color = (180, 30, 30)  # Тёмно-красный
-            light_color = (255, 80, 80)  # Светло-красный
-            arrow_direction = "down"
+            dark_color = (180, 30, 30)
+            light_color = (255, 80, 80)
+            arrow_direction = "down"  # Стрелка вниз
         else:
-            dark_color = (30, 60, 200)  # Тёмно-синий
-            light_color = (80, 140, 255)  # Светло-синий
-            arrow_direction = "up"
+            dark_color = (30, 60, 200)
+            light_color = (80, 140, 255)
+            arrow_direction = "up"  # Стрелка вверх
 
-        # Градиентный круг (от светлого края к тёмному центру)
+        # Градиентный круг
         for radius in range(max_radius, 0, -1):
             progress = radius / max_radius
             alpha = min(255, int(255 * progress))
@@ -52,33 +52,20 @@ class NoteSprite:
 
         # Стрелка направления
         arrow_size = 18
-        arrow_y_offset = 8
 
         if arrow_direction == "down":
-            # Стрелка вниз (красные ноты)
+            # Стрелка вниз
             points = [
-                (center[0], center[1] - arrow_size + arrow_y_offset),
-                (
-                    center[0] - arrow_size // 2,
-                    center[1] + arrow_size // 3 + arrow_y_offset,
-                ),
-                (
-                    center[0] + arrow_size // 2,
-                    center[1] + arrow_size // 3 + arrow_y_offset,
-                ),
+                (center[0], center[1] - arrow_size // 2),
+                (center[0] - arrow_size // 2, center[1] + arrow_size // 2),
+                (center[0] + arrow_size // 2, center[1] + arrow_size // 2),
             ]
         else:
-            # Стрелка вверх (синие ноты)
+            # Стрелка вверх
             points = [
-                (center[0], center[1] + arrow_size - arrow_y_offset),
-                (
-                    center[0] - arrow_size // 2,
-                    center[1] - arrow_size // 3 - arrow_y_offset,
-                ),
-                (
-                    center[0] + arrow_size // 2,
-                    center[1] - arrow_size // 3 - arrow_y_offset,
-                ),
+                (center[0], center[1] + arrow_size // 2),
+                (center[0] - arrow_size // 2, center[1] - arrow_size // 2),
+                (center[0] + arrow_size // 2, center[1] - arrow_size // 2),
             ]
 
         pygame.draw.polygon(surface, (255, 255, 255, 220), points)
@@ -94,11 +81,10 @@ class NoteSprite:
         brightness: float = 1.0,
     ) -> None:
         """Отрисовка ноты выбранного цвета"""
-        # Выбираем спрайт по цвету
         sprite = self.red_sprite if color == NoteColor.RED else self.blue_sprite
         sprite_copy = sprite.copy()
 
-        # Применяем яркость (дальние ноты темнее)
+        # Применяем яркость
         if brightness < 1.0:
             dark_surface = pygame.Surface(
                 (self.note_width, self.note_height), pygame.SRCALPHA
