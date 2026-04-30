@@ -86,9 +86,9 @@ class GameScreen:
         self.result_font = pygame.font.Font(None, 36)
         self.result_font_big = pygame.font.Font(None, 48)
 
-        # Позиции дорожек
-        self.red_x = config.screen_width * 0.75
-        self.blue_x = config.screen_width * 0.25
+        # Позиции дорожек из конфига
+        self.red_x = config.red_lane_x
+        self.blue_x = config.blue_lane_x
         self.hit_line_y = config.hit_line_y
 
     def update(self, dt: float, input_handler: InputHandler) -> None:
@@ -137,7 +137,6 @@ class GameScreen:
             result, note = self.note_controller.check_hit_red(song_position)
 
             if result == HitResult.MISS:
-                # Промах мимо всех нот — показываем MISS на линии удара
                 self._add_floating_text(
                     "MISS", self.red_x, self.hit_line_y, (255, 100, 100), big=True
                 )
@@ -206,7 +205,6 @@ class GameScreen:
         for note in missed_notes:
             self.score_manager.add_hit(HitResult.MISS)
             self.audio.play_sfx("miss")
-            # Показываем MISS на позиции пропущенной ноты
             self._add_floating_text("MISS", note.x, note.y, (255, 80, 80), big=True)
 
     def _add_floating_text(
@@ -234,9 +232,7 @@ class GameScreen:
         self.renderer.render_notes(visible_notes)
 
         # Всплывающие тексты (поверх нот)
-        font = self.result_font_big
         for ft in self.floating_texts:
-            # Используем большой шрифт для PERFECT/MISS/WRONG
             if ft.text in ("PERFECT!", "MISS", "WRONG!"):
                 ft.draw(self.screen, self.result_font_big)
             else:

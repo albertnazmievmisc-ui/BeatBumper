@@ -59,14 +59,14 @@ class NoteController:
         self.note_speed = config.note_speed
 
         # Позиция линии удара (внизу экрана)
-        self.hit_line_y = config.screen_height - 150
+        self.hit_line_y = config.hit_line_y
 
         # Спавн позиция (сверху за экраном)
         self.spawn_y = -100
 
-        # Позиции для красных (справа) и синих (слева) нот
-        self.red_x = config.screen_width * 0.75  # Правая сторона
-        self.blue_x = config.screen_width * 0.25  # Левая сторона
+        # Позиции дорожек из конфига
+        self.red_x = config.red_lane_x
+        self.blue_x = config.blue_lane_x
 
     def load_beatmap(self, notes_data: List[Dict]) -> None:
         """Загрузка нот из битмапы с цветами"""

@@ -4,7 +4,7 @@
 
 import pygame
 from enum import Enum, auto
-from typing import Set
+from typing import Set, List
 
 from utils.config import Config
 

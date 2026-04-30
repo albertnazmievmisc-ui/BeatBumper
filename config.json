@@ -1,7 +1,14 @@
 {
+  "screen_width": 1280,
+  "screen_height": 720,
   "fullscreen": false,
-  "music_volume": 0.8,
-  "sfx_volume": 0.6,
+  "target_fps": 60,
+  "debug_mode": false,
   "note_speed": 600,
-  "debug_mode": true
+  "hit_line_y": 570,
+  "red_lane_position": 0.58,
+  "blue_lane_position": 0.42,
+  "lane_width": 100,
+  "lane_alpha": 15,
+  "audio_latency_ms": -50
 }
