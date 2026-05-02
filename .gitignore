@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 *$py.class
+*.sh
 
 # Virtual environments
 env/
@@ -14,6 +15,8 @@ ENV/
 # Project specific
 songs/
 Trash/
+collect_files.py
+patch_file.txt
 
 # IDE
 .vscode/
