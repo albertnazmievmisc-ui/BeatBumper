@@ -105,6 +105,31 @@ class InputHandler:
             elif event.type == pygame.JOYAXISMOTION:
                 if event.axis < len(self.axes_values):
                     self.axes_values[event.axis] = event.value
+            
+            elif event.type == pygame.JOYHATMOTION:
+                # D-pad: hat[0] = 0 (центр), -1 (влево), 1 (вправо)
+                #        hat[1] = 0 (центр), -1 (вниз), 1 (вверх)
+                if event.hat == 0:
+                    # Эмулируем нажатия клавиш для D-pad
+                    if event.value[0] == -1:  # Влево
+                        self.keys_just_pressed.add(pygame.K_LEFT)
+                        self.keys_pressed.add(pygame.K_LEFT)
+                    elif event.value[0] == 1:  # Вправо
+                        self.keys_just_pressed.add(pygame.K_RIGHT)
+                        self.keys_pressed.add(pygame.K_RIGHT)
+                    elif event.value[0] == 0:
+                        self.keys_pressed.discard(pygame.K_LEFT)
+                        self.keys_pressed.discard(pygame.K_RIGHT)
+                    
+                    if event.value[1] == 1:  # Вверх
+                        self.keys_just_pressed.add(pygame.K_UP)
+                        self.keys_pressed.add(pygame.K_UP)
+                    elif event.value[1] == -1:  # Вниз
+                        self.keys_just_pressed.add(pygame.K_DOWN)
+                        self.keys_pressed.add(pygame.K_DOWN)
+                    elif event.value[1] == 0:
+                        self.keys_pressed.discard(pygame.K_UP)
+                        self.keys_pressed.discard(pygame.K_DOWN)
 
         # Обработка триггеров (оси 4 = LT, 5 = RT на Xbox/Steam Deck)
         if self.joystick:

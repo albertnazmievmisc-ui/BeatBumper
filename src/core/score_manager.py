@@ -2,8 +2,11 @@
 Менеджер очков и комбо
 """
 
+import json
 from dataclasses import dataclass
-from typing import List
+from pathlib import Path
+from datetime import datetime
+from typing import List, Dict, Optional
 from enum import Enum
 
 from core.note_controller import HitResult
@@ -60,7 +63,7 @@ class ScoreManager:
             self.stats.good_count += 1
             base_score = self.SCORE_GOOD
             
-        else:  # MISS
+        else:  # MISS or WRONG_COLOR
             self.stats.current_combo = 0
             self.stats.miss_count += 1
             base_score = self.SCORE_MISS
@@ -99,6 +102,57 @@ class ScoreManager:
                 self.stats.rank = Rank.D
             else:
                 self.stats.rank = Rank.F
+    
+    def save_high_score(self, song_name: str, difficulty: str) -> bool:
+        """Сохранение рекорда"""
+        scores_file = Path("scores.json")
+        
+        # Загружаем существующие рекорды
+        high_scores = {}
+        if scores_file.exists():
+            try:
+                with open(scores_file, 'r') as f:
+                    high_scores = json.load(f)
+            except:
+                pass
+        
+        # Ключ для песни и сложности
+        key = f"{song_name}|{difficulty}"
+        
+        # Сохраняем только если это новый рекорд
+        current_best = high_scores.get(key, {}).get("score", 0)
+        if self.stats.score > current_best:
+            high_scores[key] = {
+                "score": self.stats.score,
+                "accuracy": self.stats.accuracy,
+                "rank": self.stats.rank.value,
+                "max_combo": self.stats.max_combo,
+                "perfect": self.stats.perfect_count,
+                "good": self.stats.good_count,
+                "miss": self.stats.miss_count,
+                "date": datetime.now().isoformat()
+            }
+            
+            with open(scores_file, 'w') as f:
+                json.dump(high_scores, f, indent=2)
+            
+            print(f"🏆 Новый рекорд! {self.stats.score:,} очков")
+            return True
+        return False
+    
+    def get_high_score(self, song_name: str, difficulty: str) -> Optional[Dict]:
+        """Получение текущего рекорда"""
+        scores_file = Path("scores.json")
+        if not scores_file.exists():
+            return None
+        
+        try:
+            with open(scores_file, 'r') as f:
+                high_scores = json.load(f)
+            key = f"{song_name}|{difficulty}"
+            return high_scores.get(key)
+        except:
+            return None
     
     def reset(self) -> None:
         """Сброс статистики"""

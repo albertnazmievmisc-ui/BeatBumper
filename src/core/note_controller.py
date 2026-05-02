@@ -44,6 +44,16 @@ class Note:
     y: float = 0.0
 
 
+class Bomb:
+    """Данные бомбы"""
+
+    def __init__(self, time: float, x: float, y: float):
+        self.time = time
+        self.x = x
+        self.y = y
+        self.hit = False
+
+
 class NoteController:
     """Управление нотами на экране (сверху вниз)"""
 

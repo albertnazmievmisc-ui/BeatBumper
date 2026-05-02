@@ -124,6 +124,44 @@ class BeatmapParser:
 
         return parsed_notes
 
+    def parse_bombs(self, beatmap_data: Dict) -> List[Dict]:
+        """Парсинг бомб для будущей реализации"""
+        bombs = []
+        format_type = self._detect_format(beatmap_data)
+        
+        if format_type == "v4":
+            bomb_objects = beatmap_data.get("bombNotes", [])
+            bomb_data = beatmap_data.get("bombNotesData", [])
+            for obj in bomb_objects:
+                data_index = obj.get("i", 0)
+                if data_index < len(bomb_data):
+                    note_data = bomb_data[data_index]
+                    beat_time = obj.get("b", 0.0)
+                    time_in_seconds = self._beats_to_seconds(beat_time)
+                    bombs.append({
+                        "time": time_in_seconds,
+                        "x": note_data.get("x", 0),
+                        "y": note_data.get("y", 0),
+                    })
+        elif format_type == "v3":
+            # v3 бомбы в obstacles? обычно отдельно
+            pass
+        else:
+            # v2: _notes с _type=3
+            notes = beatmap_data.get("_notes", [])
+            for note in notes:
+                if note.get("_type") == self.BOMB_V2:
+                    beat_time = note.get("_time", 0.0)
+                    bombs.append({
+                        "time": self._beats_to_seconds(beat_time),
+                        "x": note.get("_lineIndex", 0),
+                        "y": note.get("_lineLayer", 0),
+                    })
+        
+        if bombs:
+            print(f"💣 Найдено бомб: {len(bombs)} (поддержка в разработке)")
+        return bombs
+
     def _parse_v3(self, beatmap_data: Dict) -> List[Dict]:
         """Парсинг v3: colorNotes с полными данными внутри"""
         self.bpm = self._get_bpm(beatmap_data)

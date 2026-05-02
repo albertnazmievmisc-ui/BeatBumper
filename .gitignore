@@ -16,7 +16,10 @@ ENV/
 songs/
 Trash/
 collect_files.py
-patch_file.txt
+apply_fixes.py
+verify_fixes.py
+apply_fixes.py
+scores.json
 
 # IDE
 .vscode/

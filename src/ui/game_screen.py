@@ -83,6 +83,11 @@ class GameScreen:
 
         # Контроллеры
         self.note_controller = NoteController(config)
+        
+        # Сохраняем информацию о песне для рекордов
+        self.song_name = song_data.get("name", "Unknown")
+        self.song_difficulty = song_data.get("difficulty", "Unknown")
+        print(f"📝 Песня: {self.song_name} [{self.song_difficulty}]")
         self.score_manager = ScoreManager()
         self.renderer = Renderer(screen, config)
 
@@ -168,6 +173,9 @@ class GameScreen:
             self.score_manager.add_hit(HitResult.MISS)
             self.audio.play_sfx("miss")
             self._add_floating_text("MISS", note.x, note.y, (255, 80, 80), big=True)
+            # Добавляем эффект пролетающей мимо ноты
+            if hasattr(self.renderer.effects, 'create_miss_effect'):
+                self.renderer.effects.create_miss_effect(note.x, note.y)
 
     def _process_hit_result(
         self, result: HitResult, note: Optional[Note], color: NoteColor
@@ -301,6 +309,11 @@ class GameScreen:
         self.audio.stop()
         total_notes = len(self.note_controller.notes)
         self.score_manager.calculate_final_stats(total_notes)
+        # Сохраняем рекорд
+        if hasattr(self, 'song_name') and hasattr(self, 'song_difficulty'):
+            self.score_manager.save_high_score(self.song_name, self.song_difficulty)
+        else:
+            print("⚠️ Не удалось сохранить рекорд: нет имени песни")
         self.game_over = True
         print("🏁 Игра завершена")
 

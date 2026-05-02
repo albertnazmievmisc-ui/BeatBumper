@@ -221,6 +221,16 @@ class EffectsManager:
             speed = random.uniform(50, 150)
             self.particles.append(Particle(x, y, self.blue_color, speed, angle, 0.3, 3))
 
+
+    def create_miss_effect(self, x: float, y: float) -> None:
+        """Эффект пролетающей мимо ноты"""
+        # Слабое серое свечение
+        self.shockwaves.append(Shockwave(x, y, (100, 100, 100), 40, 0.2))
+        # Несколько серых частиц
+        for _ in range(5):
+            angle = random.uniform(math.pi * 0.8, math.pi * 1.2)  # Вниз
+            speed = random.uniform(50, 100)
+            self.particles.append(Particle(x, y, (150, 150, 150), speed, angle, 0.3, 2))
     def update(self, dt: float) -> None:
         """Обновление всех эффектов"""
         # Обновление частиц
